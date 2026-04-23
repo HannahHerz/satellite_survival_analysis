@@ -1,7 +1,7 @@
 # Satellite Survival Analysis
 
 ## Structure
-- data: cleaned dataset and data preparation script
+- data: cleaned dataset and data preparation script -> missing observations are either removed or imputed (median)
 -
 
 ### Data
