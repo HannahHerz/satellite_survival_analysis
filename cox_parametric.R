@@ -36,9 +36,10 @@ table(Satellite$event)
 # ── Cox PH model ──────────────────────────────────────────────────────────────
 
 # Full model: all candidate covariates.
-# highly correlated vars so select one:
-# perigee/apogee                       -> log_perigee.
-# country_grouped/launch_vehicle_group -> country_grouped
+# highly correlated vars so select one to avoid multi-collinearity:
+# log_perigee/log_apogee               (r = 0.98)              -> log_perigee
+# apogee/period                        (r = 0.97)              -> drop period
+# country_grouped/launch_vehicle_group (Cramer's V = 0.67>0.5) -> country_grouped
 fit_full <- coxph(
   Surv(time_days, event) ~ purpose_3 + country_grouped + users_grouped +
     orbit_altitude_class + orbit_geometry_type +
@@ -84,6 +85,24 @@ png("plots/cox_Schoenfeld_gg.png", width = 1800, height = 2200, res = 130)
 print(ggcoxzphFixed(zph))
 dev.off()
 
+# Tie-handling sensitivity: refit fit_step with Efron and Exact
+fit_efron <- update(fit_step, ties = "efron")
+fit_exact <- update(fit_step, ties = "exact")
+
+ties_compare <- cbind(
+  Breslow = coef(fit_step),
+  Efron   = coef(fit_efron),
+  Exact   = coef(fit_exact)
+)
+ncatn("Coefficients Breslow - Efron - Exact")
+print(round(ties_compare, 5))
+
+ncatn("Max |difference|:")
+print(c(
+  Breslow_vs_Efron = max(abs(coef(fit_step)  - coef(fit_efron))),
+  Breslow_vs_Exact = max(abs(coef(fit_step)  - coef(fit_exact))),
+  Efron_vs_Exact   = max(abs(coef(fit_efron) - coef(fit_exact)))
+))
 
 # ── Parametric AFT models ──────────────────────────────────────────────────────────────
 
